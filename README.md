@@ -12,3 +12,7 @@ El proyecto escogido para trabajar la visualización se trata acerca del cine Co
 Actualmente se encuentran incursionando en otro tipo de producciones como lo son series web por ejemplo entre panas, este tipo de contenido y otros más se están dando dado a una preocupación muy grande de esta y otras productoras locales y es ¿Por que los Colombianos no consumimos el cine producido localmente?
 
 A partir de esta preocupación partimos en este proyecto a realizar un análisis y guiarnos por las tareas que se quieren resolver en esta industria, con un alcance acotado a tener una buena visualización, esta visualización esta basada y argumentada por Tamara Munzner con su libro Visualization Analysis and Design AK Peters 2014
+
+Mira:
+
+https://github.com/jhon0010/vis_cine_colombiano/wiki
