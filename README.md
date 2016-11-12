@@ -1,17 +1,15 @@
 # vis_cine_colombiano
 
-Este es un proyecto de la maestría de ingeniería de sistemas y computación de la universidad de los Andes, específicamente de la materia de Visual Analytics.
+This is a project from the Master’s degree of the Systems and Computation Engineering program of Los Andes University, specifically from the course Visual Analytics.
 
-Como integrantes de este proyecto tenemos:
+The project group is composed by Raul Felipe Blanco Silva, Nicolas Aguilar, Jhon Mario Lotero Salazar. 
 
-Raul Felipe Blanco Silva
-Nicolas Aguilar
-Jhon Mario Lotero Salazar
-El proyecto escogido para trabajar la visualización se trata acerca del cine Colombiano, para esto contamos con un excelente contribuidor, como lo son 64 A Films, los cuales han sido promotores y principales protagonistas en esta industria, con obras como Perro come perro, Ciudad delirioentre otras grandes y conocidas nacional e internacional mente.
+The visualization project is researching the topic of Colombian cinema, and as a partner and client we have 64 A Films, who has been a very important personality in the industry, working on films like “Perro come perro”, “Ciudad delirio” among others. In the moment, they are working in another type of products, which are web series such as “Entre panas” among others. 
 
-Actualmente se encuentran incursionando en otro tipo de producciones como lo son series web por ejemplo entre panas, este tipo de contenido y otros más se están dando dado a una preocupación muy grande de esta y otras productoras locales y es ¿Por que los Colombianos no consumimos el cine producido localmente?
+While working on all these projects, 64 A Films and other film producers started to develop a common concern which they haven’t been able to fully comprehend, ultimately, raising the question ¿Why Colombians don’t go to the cinema and watch local movies?
 
-A partir de esta preocupación partimos en este proyecto a realizar un análisis y guiarnos por las tareas que se quieren resolver en esta industria, con un alcance acotado a tener una buena visualización, esta visualización esta basada y argumentada por Tamara Munzner con su libro Visualization Analysis and Design AK Peters 2014
+Based on this concern, we started working on an analysis, focusing on the main points this industry wants to solve, limiting the reach of the investigation in order to produce a clear, concrete and expressive visualization. All of this, based on Tamars Munzner’s book “Visualization Analysis and Design, AK Peters 2014”
+
 
 Mira:
 
