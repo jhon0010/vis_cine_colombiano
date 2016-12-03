@@ -11,6 +11,21 @@ While working on all these projects, 64 A Films and other film producers started
 Based on this concern, we started working on an analysis, focusing on the main points this industry wants to solve, limiting the reach of the investigation in order to produce a clear, concrete and expressive visualization. All of this, based on Tamars Munzner’s book “Visualization Analysis and Design, AK Peters 2014”
 
 
-Mira:
+See the wiki of the project:
 
 https://github.com/jhon0010/vis_cine_colombiano/wiki
+
+
+To see the course page:
+
+http://johnguerra.co/classes/isis_4822_fall_2016/
+
+
+To see the project demo:
+
+http://blockbuilder.org/jhon0010/5e50dec2358bc61575969b8e0d1807ea
+
+
+The paper can be found in here:
+
+"futuro link"
