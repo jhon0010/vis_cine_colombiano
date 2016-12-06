@@ -25,7 +25,10 @@ To see the project demo:
 
 http://blockbuilder.org/jhon0010/5e50dec2358bc61575969b8e0d1807ea
 
+To see a video example of the project:
+
+https://www.youtube.com/watch?v=paiShceVAco&feature=youtu.be
 
 The paper can be found in here:
 
-"futuro link"
+https://github.com/jhon0010/vis_cine_colombiano/blob/master/Entregables/ColombianCinemaPaper.doc
