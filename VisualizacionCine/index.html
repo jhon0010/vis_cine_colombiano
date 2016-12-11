@@ -1,0 +1,932 @@
+<!DOCTYPE html> 
+<meta charset="utf-8">
+<title>Colombian Cinema - Parallel Coordinates</title>
+<body>
+  
+     <div id="sum"></div>
+  
+   <div id="text"></div>
+   <div id="chart1"></div>
+  
+
+        <div id="chart2">
+ <div id="chart3">
+   <div id="chart4">
+<script type="text/javascript" src="http://gc.kis.v2.scr.kaspersky-labs.com/0B4767DA-A99D-3248-8FF7-C4432372DB76/main.js" charset="UTF-8"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+<script src="http://bl.ocks.org/syntagmatic/raw/3341641/render-queue.js"></script>
+<link rel="stylesheet" href="style.css"></link>
+<script> 
+
+     
+//parallel viz  
+function first() {  
+ 
+var margin = {top: 66, right: 90, bottom: 20, left: 90},
+    width = document.body.clientWidth - margin.left - margin.right,
+    height = 400 - margin.top - margin.bottom,
+    innerHeight = height - 2;
+
+var devicePixelRatio = window.devicePixelRatio || 1;
+
+var color = d3.scale.ordinal()
+  .range(["#5DA5B3","#D58323","#DD6CA7","#54AF52","#8C92E8","#E15E5A","#725D82","#776327","#50AB84","#954D56","#AB9C27","#517C3F","#9D5130","#357468","#5E9ACF","#C47DCB","#7D9E33","#DB7F85","#BA89AD","#4C6C86","#B59248","#D8597D","#944F7E","#D67D4B","#8F86C2"]);
+
+
+<!-- Defining data types used in the visualization  -->
+var types = {
+  "Number": {
+    key: "Number",
+    coerce: function(d) { return +d; },
+    extent: d3.extent,
+    within: function(d, extent) { return extent[0] <= d && d <= extent[1]; },
+    defaultScale: d3.scale.linear().range([innerHeight, 0])
+  },
+  "String": {
+    key: "String", 
+    coerce: String,
+    extent: function (data) { return data.sort(); },
+    within: function(d, extent, dim) { return extent[0] <= dim.scale(d) && dim.scale(d) <= extent[1]; },
+    defaultScale: d3.scale.ordinal().rangePoints([0, innerHeight])
+  }
+};
+
+
+<!-- Defining dimensions used in the visualization -->
+
+var dimensions = [
+/*  {
+    key: "TÍTULO",
+    description: "Title",
+    type: types["String"],
+    axis: d3.svg.axis().orient("left")
+      .tickFormat(function(d,i) {
+        return d;
+      })
+  },*/
+      {
+    key: "AÑO DE ESTRENO",
+    description: "Release year",
+    type: types["String"],
+    scale:  d3.scale.ordinal().rangePoints([innerHeight,0])
+  },
+      /*{
+    key: "MES DE ESTRENO",
+    description: "Release Month",
+    type: types["String"],
+  },*/
+  
+  {
+    key: "TAQUILLA",
+    description: "Revenue",
+    type: types["Number"],
+    scale: d3.scale.sqrt().range([innerHeight, 0])
+  },
+  {
+    key: "ESPECTADORES",
+    description: "Spectators",
+    type: types["Number"],
+    scale: d3.scale.sqrt().range([innerHeight, 0])
+  },
+    {
+    key: "DISTRIBUIDOR",
+    description: "Exhibitor",
+    type: types["String"],
+    axis: d3.svg.axis().orient("left")
+      .tickFormat(function(d,i) {
+        return d;
+    })
+  },
+  {
+    key: "DURACIÓN",
+    description: "Duration in minutes",
+    type: types["Number"],
+    scale: d3.scale.linear().range([innerHeight, 0])
+  },
+
+
+  {
+    key: "CLASIFICACIÓN",
+    description: "Clasification age",
+    type: types["Number"],
+  },
+];
+
+ //Setup for viz
+var xscale = d3.scale.ordinal()
+    .domain(d3.range(dimensions.length))
+    .rangePoints([0, width]);
+
+var yAxis = d3.svg.axis()
+    .orient("left");
+
+var container = d3.select("#sum").append("div")
+    .attr("class", "parcoords")
+    .style("width", width + margin.left + margin.right + "px")
+    .style("height", height + margin.top + margin.bottom + "px");
+
+var svg = container.append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var canvas = container.append("canvas")
+    .attr("width", width * devicePixelRatio)
+    .attr("height", height * devicePixelRatio)
+    .style("width", width + "px")
+    .style("height", height + "px")
+    .style("margin-top", margin.top + "px")
+    .style("margin-left", margin.left + "px");
+
+var ctx = canvas.node().getContext("2d");
+ctx.globalCompositeOperation = 'darken';
+ctx.globalAlpha = 0.15;
+ctx.lineWidth = 1.5;
+ctx.scale(devicePixelRatio, devicePixelRatio);
+
+var output = d3.select("#text").append("pre");
+
+var axes = svg.selectAll(".axis")
+    .data(dimensions)
+  .enter().append("g")
+    .attr("class", function(d) { return "axis " + d.key.replace(/ /g, "_"); })
+    .attr("transform", function(d,i) { return "translate(" + xscale(i) + ")"; });
+
+  
+//read in the data  
+d3.csv("Peliculas42.csv", function(error, data) {
+  if (error) throw error;
+
+  
+  // shuffle the data!
+  data = d3.shuffle(data);
+
+  data.forEach(function(d) {
+    dimensions.forEach(function(p) {
+      d[p.key] = !d[p.key] ? null : p.type.coerce(d[p.key]);
+    });
+
+    // truncate long text strings to fit in data table
+    for (var key in d) {
+      if (d[key] && d[key].length > 35) d[key] = d[key].slice(0,36);
+    }
+  });
+
+  // type/dimension default setting happens here
+  dimensions.forEach(function(dim) {
+    if (!("domain" in dim)) {
+      // detect domain using dimension type's extent function
+      dim.domain = d3.functor(dim.type.extent)(data.map(function(d) { return d[dim.key]; }));
+    }
+    if (!("scale" in dim)) {
+      // use type's default scale for dimension
+      dim.scale = dim.type.defaultScale.copy();
+    }
+    dim.scale.domain(dim.domain);
+  });
+
+  var render = renderQueue(draw).rate(30);
+
+  ctx.clearRect(0,0,width,height);
+  ctx.globalAlpha = d3.min([0.85/Math.pow(data.length,0.3),1]);
+  render(data);
+
+  axes.append("g")
+      .each(function(d) {
+        var renderAxis = "axis" in d
+          ? d.axis.scale(d.scale)  // custom axis
+          : yAxis.scale(d.scale);  // default axis
+        d3.select(this).call(renderAxis);
+      })
+    .append("text")
+      .attr("class", "title")
+      .attr("text-anchor", "start")
+      .text(function(d) { return "description" in d ? d.description : d.key; });
+
+  // Add and store a brush for each axis.
+  axes.append("g")
+      .attr("class", "brush")
+      .each(function(d) {
+        d3.select(this).call(d.brush = d3.svg.brush()
+          .y(d.scale)
+          .on("brushstart", brushstart)
+          .on("brush", brush));
+      })
+    .selectAll("rect")
+      .attr("x", -8)
+      .attr("width", 16);
+
+  d3.selectAll(".axis.tittle .tick text")
+    .style("fill", color);
+
+  output.text(d3.tsv.format(data.slice(0,data.lenght)));
+  
+  
+  function project(d) {
+    return dimensions.map(function(p,i) {
+      // check if data element has property and contains a value
+   
+      if (
+        !(p.key in d) ||
+        d[p.key] === null
+      ) return null;
+
+      return [xscale(i),p.scale(d[p.key])];
+    });
+  };
+
+  
+  function draw(d) {
+    ctx.strokeStyle = color(d["AÑO DE ESTRENO"]);
+ 
+    ctx.beginPath();
+    var coords = project(d);
+    coords.forEach(function(p,i) {
+      // this tricky bit avoids rendering null values as 0
+      if (p === null) {
+        // this bit renders horizontal lines on the previous/next
+        // dimensions, so that sandwiched null values are visible
+        if (i > 0) {
+          var prev = coords[i-1]; 
+          if (prev !== null) {
+            ctx.moveTo(prev[0],prev[1]);
+            ctx.lineTo(prev[0]+6,prev[1]);
+          }
+        }
+        if (i < coords.length-1) {
+          var next = coords[i+1];
+          if (next !== null) {
+            ctx.moveTo(next[0]-6,next[1]);
+          }
+        }
+        return;
+      }
+
+      if (i == 0) {
+        ctx.moveTo(p[0],p[1]);
+        return;
+      }
+
+      ctx.lineTo(p[0],p[1]);
+    });
+    ctx.stroke();
+  }
+
+  function brushstart() {
+    d3.event.sourceEvent.stopPropagation();
+  }
+
+  
+  // Handles a brush event, toggling the display of foreground lines.
+  function brush() {
+    var actives = dimensions.filter(function(p) { return !p.brush.empty(); }),
+        extents = actives.map(function(p) { return p.brush.extent(); });
+
+   
+    var selected = data.filter(function(d) {
+      if (actives.every(function(dim, i) {
+          // test if point is within extents for each active brush
+          return dim.type.within(d[dim.key], extents[i], dim);
+        })) {
+        return true;
+      }
+    });
+
+    // show ticks for active brush dimensions
+    // and filter ticks to only those within brush extents
+    svg.selectAll(".axis")
+        .filter(function(d) {
+          return actives.indexOf(d) > -1 ? true : false;
+        })
+        .classed("active", true)
+        .each(function(dimension, i) {
+          var extent = extents[i];
+          d3.select(this)
+            .selectAll(".tick text")
+            .style("display", function(d) {
+              var value = dimension.type.coerce(d);
+              return dimension.type.within(value, extent, dimension) ? null : "none";
+            });
+        });
+
+    // reset dimensions without active brushes
+    svg.selectAll(".axis")
+        .filter(function(d) {
+          return actives.indexOf(d) > -1 ? false : true;
+        })
+        .classed("active", false)
+        .selectAll(".tick text")
+          .style("display", null);
+
+    ctx.clearRect(0,0,width,height);
+    ctx.globalAlpha = d3.min([0.85/Math.pow(selected.length,0.3),1]);
+    render(selected);
+    
+
+ 	
+    output.text(d3.tsv.format(selected.slice(0,data.lenght)));
+  
+
+
+   second(selected);
+
+  }
+  time(data);
+	});
+}
+  
+//global var for the sum charts!  
+  var margin = {top: 50, right: 40, bottom: 20, left: 185},
+    width = 500 - margin.left - margin.right,   
+    height = 350 - margin.top - margin.bottom;
+
+  
+var y = d3.scale.ordinal()  
+    .rangeRoundBands([0, height], 0.5);
+
+var x = d3.scale.linear()
+    .range([0, width]);  
+ 	  
+  
+  
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom")
+		.tickFormat(d3.format("d"));
+  	
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left");
+
+
+  
+var chart = d3.select("#chart1").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+
+
+  
+  var chart2 = d3.select("#chart1").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  
+  chart2.append('text')
+        .attr("x", (width / 2))				
+      .attr("y", 0 - (margin.top / 2))
+      .attr("text-anchor", "middle")	
+      .style("font-size", "20px") 
+      .style("text-decoration", "underline") 	
+      .text("Top Ten");
+  
+  
+var chart3 = d3.select("#chart1").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+
+  var margin1 = {top: 50, right: 80, bottom: 80, left: 100},
+    width1 = document.body.clientWidth - margin1.left - margin1.right,   
+    height1 = 400 - margin1.top - margin1.bottom;
+
+  
+var xTime = d3.time.scale()
+			.range([0, width1]);
+
+var yTime = d3.scale.linear()
+      .range([height1, 0]);
+  
+var y2Time = d3.scale.linear()
+      .range([height1, 0]);
+  
+  var xAxisT = d3.svg.axis()
+      .scale(xTime)
+      .orient("bottom")
+ 		.ticks(d3.time.month) 
+  .tickFormat(d3.time.format("%B-%Y"));
+
+  var yAxisT = d3.svg.axis()
+      .scale(yTime)
+      .orient("left");  
+  
+    var yAxisT2 = d3.svg.axis()
+      .scale(y2Time)
+      .orient("right"); 
+   
+
+    var chart4 = d3.select("#chart3").append("svg")
+    .attr("width", width1 + margin1.left + margin1.right)
+    .attr("height", height1 + margin1.top + margin1.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin1.left + "," + margin1.top + ")")
+
+
+  //Upates all the graph depending on the brushes
+function second(data) {
+
+
+
+  //update sum of selected distributors
+  var disCount1 = d3.nest()
+  .key(function(d) { return d.DISTRIBUIDOR; })
+  .rollup(function(v) { return v.length; })
+  .entries(data);
+  
+ 
+  //sort data
+  disCount1.sort(function(a, b) {
+  return d3.descending(a.values, b.values)
+});  
+  
+  //Select top 10
+  var disCount1 = disCount1.filter(function(d, i) { return i<10; });
+  
+x.domain([0, d3.max(disCount1, function(d) { return d.values; })]);
+y.domain(disCount1.map(function(d) { return d.key; }));
+		
+
+  
+  	chart.select(".x.axis").remove()
+    chart.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + height + ")") 
+          .call(xAxis)
+          .selectAll("text")	
+            .style("text-anchor", "middle")
+
+ 
+    chart.select(".y.axis").remove()
+    chart.append("g")
+          .attr("class", "y axis")
+           .call(yAxis)
+        .selectAll("text")
+    	.attr("font-size", "10px");
+    
+    
+   chart.append("text")
+			 .call(yAxis)
+        .attr("y", -17)
+        .attr("dy", ".71em")
+        .style("text-anchor", "middle")
+        .text("Distributor")
+ 
+
+  chart.selectAll(".bar").remove();
+
+    chart.selectAll(".bar")
+      .data(disCount1)
+    .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", 0)
+      .attr("width", function(d) {return x(d.values)})
+      .attr("y", function(d) { return y(d.key); })
+      .attr("height", y.rangeBand());
+  
+  
+  //Sum selected producers, CHART2!
+ 
+  var prodCount1 = d3.nest()
+  .key(function(d) { return d.PRODUCTOR; })
+  .rollup(function(v) { return v.length; }) 
+  .entries(data);
+  
+  //sort data
+  prodCount1.sort(function(a, b) {
+  return d3.descending(a.values, b.values)
+});
+  
+  //Select top 10    
+  var prodCount1 = prodCount1.filter(function(d, i) { return i<10; });
+  
+x.domain([0, d3.max(prodCount1, function(d) { return d.values; })]);
+y.domain(prodCount1.map(function(d) { return d.key; }));
+ 		
+   
+  //append new axis for chart2
+  	chart2.select(".x.axis").remove()
+    chart2
+        .append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + height + ")") 
+          .call(xAxis)
+          .selectAll("text")	
+            .style("text-anchor", "middle")
+ 
+    chart2.select(".y.axis").remove()
+    chart2.append("g")
+          .attr("class", "y axis")
+           .call(yAxis)
+        .selectAll("text")
+    	.attr("font-size", "10px");
+    
+    
+   chart2.append("text")
+			 .call(yAxis)
+        .attr("y", -17)
+        .attr("dy", ".71em")
+        .style("text-anchor", "middle")
+        .text("Producer")
+
+   //remove and append new data for chart2
+   chart2.selectAll(".bar").remove();
+   chart2.selectAll(".bar")
+      .data(prodCount1)
+    .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", 0)
+      .attr("width", function(d) {return x(d.values)})
+      .attr("y", function(d) { return y(d.key); })
+      .attr("height", y.rangeBand());
+  
+    //Sum selected directors, CHART3!
+  var direCount1 = d3.nest()
+  .key(function(d) { return d.DIRECTOR; })
+  .rollup(function(v) { return v.length; })
+  .entries(data);
+  
+  //Sort data
+    direCount1.sort(function(a, b) {
+  return d3.descending(a.values, b.values)
+});
+ 
+    //select top 10
+  var direCount1 = direCount1.filter(function(d, i) { return i<10; });
+
+  
+x.domain([0, d3.max(direCount1, function(d) { return d.values; })]);
+y.domain(direCount1.map(function(d) { return d.key; }));
+ 		
+  
+  	chart3.select(".x.axis").remove()
+    chart3.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + height + ")") 
+          .call(xAxis)
+          .selectAll("text")	
+            .style("text-anchor", "middle")
+
+ 
+    chart3.select(".y.axis").remove()
+    chart3.append("g")
+          .attr("class", "y axis")
+          .call(yAxis)
+        .selectAll("text")
+    	.attr("font-size", "10px");
+  
+  chart3.append("text")
+			 .call(yAxis)
+        .attr("y", -17)
+        .attr("dy", ".71em")
+        .style("text-anchor", "middle")
+        .text("Director")
+ 
+
+  chart3.selectAll(".bar").remove();
+    // new data:
+   chart3.selectAll(".bar")
+      .data(direCount1)
+    .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", 0)
+      .attr("width", function(d) {return x(d.values)})
+      .attr("y", function(d) { return y(d.key); })
+      .attr("height", y.rangeBand());
+ 
+  
+  //Time LINE!
+
+var parseDate = d3.time.format("%d/%m/%Y");
+var div = d3.select("#chart4").append("div")	
+    .attr("class", "tooltip")				
+    .style("opacity", 0);  
+
+var formatDate = d3.time.format("%b-%Y")
+   data.forEach(function(d) {
+    d.month = formatDate(parseDate.parse(d["FECHA DE ESTRENO"].toString()));
+  });
+  
+
+   var movieYear= d3.nest()
+   .key(function(d) { return d.month; })
+.rollup(function(leaves) { return {"length": leaves.length,"revenue": d3.sum(leaves,function(d){return d.TAQUILLA}),  "spectators": d3.sum(leaves, function(d){return d.ESPECTADORES})}})
+  .entries(data);
+  
+ 
+  var parseDate2 = d3.time.format("%b-%Y");
+     movieYear.forEach(function(d) {
+    d.date = parseDate2.parse(d.key.toString());
+  });
+    
+  
+      movieYear.sort(function(a, b) {
+  return d3.ascending(a.date, b.date)
+});
+  
+  
+xTime.domain(d3.extent(movieYear, function(d) { return d.date; })).nice();
+yTime.domain([0, d3.max(movieYear, function(d) { return d.values.revenue; })]).nice();
+y2Time.domain([0, d3.max(movieYear, function(d) { return d.values.spectators; })]).nice();
+  
+
+ 	// Define the line
+var valueline = d3.svg.line()
+    .x(function(d) { return xTime(d.date); })
+    .y(function(d) { return yTime(d.values.revenue); });	
+  
+  
+var specLine = d3.svg.line()
+    .x(function(d) { return xTime(d.date); })
+    .y(function(d) { return y2Time(d.values.spectators); });
+  
+  
+  
+   chart4.selectAll("path").remove();
+     chart4.append("path")
+        .attr("class", "line")
+        .attr("d", valueline(movieYear));
+  
+       chart4.append("path")
+        .attr("class", "line")
+	.style("stroke", "red")
+        .attr("d", specLine(movieYear));
+  
+  	chart4.select(".x.axis").remove()
+    chart4.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + (height1) + ")") 
+          .call(xAxisT)
+          .selectAll("text")	
+            .style("text-anchor", "middle")
+    .attr("dy", "-5")
+    .attr("dx", "40")
+    .attr("transform", "rotate(90)")
+    .attr("font-size", "10px");
+ 
+    chart4.selectAll(".y.axis").remove()
+    chart4.append("g")
+          .attr("class", "y axis")
+          .call(yAxisT)
+        .selectAll("text")
+    	.attr("font-size", "10px");
+  
+  
+     chart4.append("g")
+          .attr("class", "y axis")
+    			 .attr("transform", "translate(" + width1 + ",0)")
+          .call(yAxisT2)
+        .selectAll("text")
+    	.attr("font-size", "10px");
+  
+  chart4.select("text").remove()
+  chart4.append("text")
+			 .call(yAxisT)
+        .attr("y", -17)
+        .attr("dy", ".71em")
+        .style("text-anchor", "middle")
+        .text("Total Revenue")
+    chart4.append("text")
+			 .call(yAxisT2)
+        .attr("y", -17)
+    	.attr("x", width1)
+        .attr("dy", ".71em")
+        .style("text-anchor", "middle")
+        .text("Total Spectators")
+  
+  
+
+        
+  
+  		chart4.selectAll("circle").remove();
+ 
+      chart4.selectAll(".dot")
+        .data(movieYear)
+      .enter().append("circle")
+        .attr("r", 3.5)
+        .attr("cx", function(d) { return xTime(d.date); })
+        .attr("cy", function(d) { return yTime(d.values.revenue);})
+        .on("mouseover", function(d) {		
+           div.transition()		
+                .duration(200)		
+                .style("opacity", .9);		
+            div.html((d.key) + "<br/>"  + "Revenue: " + d.values.revenue +"<br/>"+ "Number of Spectators: "+ d.values.spectators)	
+                .style("left", (d3.event.pageX) + "px")		
+                .style("top", (d3.event.pageY - 28) + "px");	
+            })					
+        .on("mouseout", function(d) {		
+            div.transition()		
+                .duration(500)		
+                .style("opacity", 0);	
+      });
+
+      chart4.selectAll(".dot")
+        .data(movieYear)
+      .enter().append("circle")
+        .attr("r", 3.5)
+        .attr("cx", function(d) { return xTime(d.date); })
+        .attr("cy", function(d) { return y2Time(d.values.spectators); })
+  			.style("fill", "green")
+        .on("mouseover", function(d) {		
+            div.transition()		
+                .duration(200)		
+                .style("opacity", .9);		
+            div	.html((d.key) + "<br/>"  + "Revenue: " + d.values.revenue +"<br/>"+ "Number of Spectators: "+ d.values.spectators)	
+                .style("left", (d3.event.pageX) + "px")		
+                .style("top", (d3.event.pageY - 28) + "px");	
+            })					
+        .on("mouseout", function(d) {		
+            div.transition()		
+                .duration(500)		
+                .style("opacity", 0);	
+      });
+}
+
+function time(data){
+  
+  var margin1 = {top: 50, right: 80, bottom: 80, left: 100},
+    width1 = document.body.clientWidth - margin1.left - margin1.right,   
+    height1 = 400 - margin1.top - margin1.bottom;
+
+  
+var x = d3.time.scale()
+			.range([0, width1]);
+
+var y = d3.scale.linear()
+      .range([height1, 0]);
+  
+var y2 = d3.scale.linear()
+      .range([height1, 0]);
+  
+  var xAxis = d3.svg.axis()
+      .scale(x)
+      .orient("bottom")
+ 		.ticks(d3.time.month) 
+  .tickFormat(d3.time.format("%B-%Y"));
+
+  var yAxis = d3.svg.axis()
+      .scale(y)
+      .orient("left");  
+  
+    var yAxis2 = d3.svg.axis()
+      .scale(y2)
+      .orient("right"); 
+   
+
+    var chart4 = d3.select("#chart4").append("svg")
+    .attr("width", width1 + margin1.left + margin1.right)
+    .attr("height", height1 + margin1.top + margin1.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin1.left + "," + margin1.top + ")")
+
+  var parseDate = d3.time.format("%d/%m/%Y");
+
+
+var formatDate = d3.time.format("%b-%Y")
+   data.forEach(function(d) {
+    d.month = formatDate(parseDate.parse(d["FECHA DE ESTRENO"].toString()));
+  });
+  
+
+   var movieYear= d3.nest()
+   .key(function(d) { return d.month; })
+  .rollup(function(leaves) { return {"length": leaves.length,"revenue": d3.sum(leaves,function(d){return d.TAQUILLA}),  "spectators": d3.sum(leaves, function(d){return d.ESPECTADORES})}})
+  .entries(data);
+  
+  
+ console.log(movieYear)
+ 
+ 
+var parseDate2 = d3.time.format("%b-%Y");
+movieYear.forEach(function(d) {
+    d.date = parseDate2.parse(d.key.toString());
+  });
+    
+  
+movieYear.sort(function(a, b) {
+  return d3.ascending(a.date, b.date)
+});
+  x.domain(d3.extent(movieYear, function(d) { return d.date; })).nice();
+y.domain([0, d3.max(movieYear, function(d) { return d.values.revenue; })]).nice();
+y2.domain([0, d3.max(movieYear, function(d) { return d.values.spectators; })]).nice();
+  
+
+ 	// Define the line
+var valueline = d3.svg.line()
+    .x(function(d) { return x(d.date); })
+    .y(function(d) { return y(d.values.revenue); });	
+  
+  
+var specLine = d3.svg.line()
+    .x(function(d) { return x(d.date); })
+    .y(function(d) { return y2(d.values.spectators); });
+  
+var div = d3.select("#chart4").append("div")	
+    .attr("class", "tooltip")				
+    .style("opacity", 0);  
+  
+   chart4.selectAll("path").remove();
+     chart4.append("path")
+        .attr("class", "line")
+        .attr("d", valueline(movieYear));
+  
+       chart4.append("path")
+        .attr("class", "line")
+	.style("stroke", "red")
+        .attr("d", specLine(movieYear));
+  
+    chart4.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + (height1) + ")") 
+          .call(xAxis)
+          .selectAll("text")	
+            .style("text-anchor", "middle")
+    .attr("dy", "-5")
+    .attr("dx", "40")
+    .attr("transform", "rotate(90)")
+    .attr("font-size", "10px");
+ 
+    chart4.append("g")
+          .attr("class", "y axis")
+          .call(yAxis)
+        .selectAll("text")
+    	.attr("font-size", "10px");
+   
+     chart4.append("g")
+          .attr("class", "y axis")
+    			 .attr("transform", "translate(" + width1 + ",0)")
+          .call(yAxis2)
+        .selectAll("text")
+    	.attr("font-size", "10px");
+  
+ 
+  chart4.append("text")
+			 .call(yAxis)
+        .attr("y", -17)
+        .attr("dy", ".71em")
+        .style("text-anchor", "middle")
+        .text("Total Revenue")
+    chart4.append("text")
+			 .call(yAxis2)
+        .attr("y", -17)
+    .attr("x", width1)
+        .attr("dy", ".71em")
+        .style("text-anchor", "middle")
+        .text("Total Spectators")
+  
+
+        
+    chart4.selectAll(".dot")
+        .data(movieYear)
+      .enter().append("circle")
+        .attr("r", 3.5)
+        .attr("cx", function(d) { return x(d.date); })
+        .attr("cy", function(d) { return y(d.values.revenue);})
+				.on("mouseover", function(d) {		
+            div.transition()		
+                .duration(200)		
+                .style("opacity", .9);		
+            div	.html((d.key) + "<br/>"  + "Revenue: " + d.values.revenue +"<br/>"+ "Number of Spectators: "+ d.values.spectators)	
+                .style("left", (d3.event.pageX) + "px")		
+                .style("top", (d3.event.pageY - 28) + "px");	
+            })					
+        .on("mouseout", function(d) {		
+            div.transition()		
+                .duration(500)		
+                .style("opacity", 0);	
+      });
+
+  
+  console.log(movieYear[1].values)
+      chart4.selectAll(".dot")
+        .data(movieYear)
+      .enter().append("circle")
+        .attr("r", 3.5)
+        .attr("cx", function(d) { return x(d.date); })
+        .attr("cy", function(d) { return y2(d.values.spectators); })
+  			.style("fill", "green")
+              .on("mouseover", function(d) {		
+            div.transition()		
+                .duration(200)		
+                .style("opacity", .9);		
+            div	.html((d.key) + "<br/>"  + "Revenue: " + d.values.revenue +"<br/>"+ "Number of Spectators: "+ d.values.spectators)	
+                .style("left", (d3.event.pageX) + "px")		
+                .style("top", (d3.event.pageY - 28) + "px");	
+            })					
+        .on("mouseout", function(d) {		
+            div.transition()		
+                .duration(500)		
+                .style("opacity", 0);	
+      });
+  
+  
+  
+}  
+first();     
+        
+
+</script>
